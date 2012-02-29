@@ -6,6 +6,7 @@ import random
 import time
 import sys
 import re
+import shutil
 
 # max number of download attempts
 max_retry = 3
@@ -71,7 +72,8 @@ def download(uid, token, song_title):
     response = opener.open(request)
 
     f = open(song_title + '.mp3', 'w')
-    f.write(response.read())
+    shutil.copyfileobj(response, f)
+    f.close()
 
 def main(**kwargs):
     """ takes in an url or url to page to scrape soundcloud links """
