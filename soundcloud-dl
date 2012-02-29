@@ -18,7 +18,6 @@ urllib2.install_opener(opener)
 
 def open_url(url):
     """ fetches html from given url """
-    print "fetching html..."
     try:
         request = urllib2.Request(url, headers=header_values)
         response = opener.open(request)
@@ -79,6 +78,8 @@ def main(**kwargs):
     
     url = kwargs['url']
 
+    print 'Downloading ' + url
+
     retry = 0
     while True:
 
@@ -125,7 +126,6 @@ if __name__ == '__main__':
     if not options.url and options.page_url:
         print "USAGE: soundcloud.py [-u URL] [-p PAGE WITH URLS]"
 
-    print "downloading: " + str(urls)
     for url in urls:
         main(**{'url':url})
 
