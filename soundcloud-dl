@@ -42,7 +42,8 @@ def get_song_title(page):
     """ scrapes song title from soundcloud link """
     match = re.search('(?<=\"title\":\").*?(?=\")', page)
     if match:
-        return match.group(0).replace(' ','_')
+        title = match.group(0).replace(' ','_')
+        return re.sub(r'[\/:*?"<>|]', '', title)
     else:
         alpha = "abcdefghijklmnopqrstuvwxyz"
         random_length = 5
