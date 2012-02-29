@@ -118,6 +118,7 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("-u", "--url", help="soundcloud url to download", dest="url")
     parser.add_option("-p", "--page", help="downloads all soundcloud urls found in given page", dest="page_url")
+    parser.add_option("-f", "--favorites", help="downloads all favorites for the given soundcloud username", dest="favorites_user")
     parser.add_option("-t", "--track-file", help="records downloaded tracks and skips those already finished", dest="track_file")
     (options, args) = parser.parse_args()
 
@@ -127,12 +128,25 @@ if __name__ == '__main__':
         urls.update(get_soundcloud_links(options.page_url))
     if options.url:
         urls.add(options.url) 
+    if options.favorites_user:
+        print 'Retrieving favorites, this may take a while..'
+        fav_url = 'http://soundcloud.com/' + options.favorites_user + '/favorites'
+        page = 1
+        while True:
+            favorites = get_soundcloud_links('%s?page=%d' % (fav_url, page))
+            if favorites:
+                urls.update(favorites)
+                print 'Finished page %d' % page
+                page += 1
+            else:
+                print 'All favorites found'
+                break
     if options.track_file:
         history = open(options.track_file, 'a+')
         history.seek(0)
         finished_urls = [url.rstrip() for url in history.readlines()]
         urls.difference_update(finished_urls)
-    if not options.url and not options.page_url:
+    if not options.url and not options.page_url and not options.favorites_user:
         parser.print_usage()
 
     try:
