@@ -123,10 +123,8 @@ if __name__ == '__main__':
         urls = get_soundcloud_links(options.page_url)
     if options.url:
         urls.append(options.url) 
-    if not options.url and options.page_url:
+    if not options.url and not options.page_url:
         print "USAGE: soundcloud.py [-u URL] [-p PAGE WITH URLS]"
 
     for url in urls:
         main(**{'url':url})
-
-
