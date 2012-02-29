@@ -1,5 +1,5 @@
 ## Soundcloud CLI tool
-### Authors: ngokevin, uberj, thedjpetersen (no order)
+### Authors: brentc4m, ngokevin, uberj, thedjpetersen (no order)
 
 edit: Soundcloud has been integrated into youtube-dl
 
