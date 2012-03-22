@@ -7,6 +7,8 @@ import time
 import sys
 import re
 import shutil
+import json
+import HTMLParser
 
 # max number of download attempts
 max_retry = 3
@@ -16,6 +18,14 @@ header_values =  {'User-Agent' : 'Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-U
 cj = cookielib.MozillaCookieJar()
 opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj), urllib2.HTTPHandler())
 urllib2.install_opener(opener)
+
+# regexes
+download_info_regex = re.compile(r'download-options.+')
+download_path_regex = re.compile(r'href="(.+?)"')
+song_info_regex = re.compile(r'bufferTracks.push\((.+?)\);')
+
+# HTML parser
+htmlparser = HTMLParser.HTMLParser()
 
 def open_url(url):
     """ fetches html from given url """
@@ -30,24 +40,18 @@ def open_url(url):
     html = response.read()
     return html
 
-def get_stream_token_uid(page):
-    """ returns stream token and uid as tuple """
-    match = re.search('"uid":"([\w\d]+?)".*?stream_token=([\w\d]+)', page)
-    if match:
-        uid = match.group(1)
-        stream_token = match.group(2)
-        return (uid, stream_token)
-
-def get_song_title(page):
-    """ scrapes song title from soundcloud link """
-    match = re.search('(?<=\"title\":\").*?(?=\")', page)
-    if match:
-        title = match.group(0).replace(' ','_')
-        return re.sub(r'[\/:*?"<>|]', '', title)
+def get_song_info(page):
+    info = {}
+    download_match = download_info_regex.search(page)
+    url_match = download_path_regex.search(download_match.group(0))
+    song_info_match = song_info_regex.search(page, download_match.end())
+    song_info = json.loads(song_info_match.group(1))
+    if url_match:
+        info['url'] = 'http://soundcloud.com' + url_match.group(1)
     else:
-        alpha = "abcdefghijklmnopqrstuvwxyz"
-        random_length = 5
-        return ''.join(random.choice(alpha) for i in xrange(random_length))
+        info['url'] = song_info['streamUrl']
+    info['title'] = re.sub(r'[\/:*?"<>|]', '', htmlparser.unescape(song_info['title']))
+    return info
 
 def get_soundcloud_links(url):
     """ given an url , scrape and return list of soundcloud links """
@@ -64,15 +68,14 @@ def get_soundcloud_links(url):
         break
     return ['http://soundcloud.com' + url for url in re.findall('<h3><a href="(/.*?)">.*?</a></h3>', html)]
 
-def download(uid, token, song_title):
+def download(song_info):
     """ given url with token and uid, download file to mp3 """
 
     # compose a url with uid and token and request the mpeg
-    url = "http://media.soundcloud.com/stream/%s?stream_token=%s" % (uid, token)
-    request = urllib2.Request(url, headers=header_values)
+    request = urllib2.Request(song_info['url'], headers=header_values)
     response = opener.open(request)
 
-    f = open(song_title + '.mp3', 'w')
+    f = open(song_info['title'] + '.mp3', 'w')
     shutil.copyfileobj(response, f)
     f.close()
 
@@ -97,22 +100,14 @@ def main(**kwargs):
             print "Could not retrieve initial html. (%s) " % (retry)
             continue 
         
-        # get stream token returns none if html is random binary 
-        info = get_stream_token_uid(html)
-        if not info:
-            retry += 1
-            print "Could not get stream token. (%s)" % (retry)
-            continue 
-
-        (uid, token) = info
-        song_title = get_song_title(html)
+        song_info = get_song_info(html)
         break 
 
     # the browser does this...so we will too
     open_url('http://media.soundcloud.com/crossdomain.xml')
 
-    download(uid, token, song_title)
-    print song_title + " successfully downloaded."
+    download(song_info)
+    print song_info['title'] + " successfully downloaded."
 
 if __name__ == '__main__':
 
